@@ -3,7 +3,8 @@ from app.database.base import Base
 from app.models.role import Role
 from app.models.user import User
 from app.models.class_ import Class, StudentClass
-from app.models.relations import ParentStudent, TeacherSubjectClass
+from app.models.relations import TeacherSubjectClass
+from app.models.parent_student import ParentStudent
 from app.models.subject import Subject
 from app.models.classroom import Classroom
 from app.models.academic_period import AcademicPeriod
