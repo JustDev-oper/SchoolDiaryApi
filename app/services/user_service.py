@@ -2,7 +2,7 @@ import re
 import random
 import string
 from typing import Tuple
-from datetime import timedelta
+from datetime import timedelta, timezone
 from sqlalchemy.orm import Session
 
 from ..models.user import User
@@ -25,7 +25,7 @@ class UserService:
     def __init__(self, db: Session):
         self.db = db
 
-    def authenticate_user(self, login: str, password: str) -> Tuple[bool, str]:
+    def authenticate_user(self, login: str, password: str, role: str) -> Tuple[bool, str]:
         """Аутентификация пользователя"""
         user = get_user_by_login(self.db, login)
         if not user:
@@ -38,6 +38,8 @@ class UserService:
             except Exception as ve:
                 return False, "Ошибка проверки пароля"
             if not password_check:
+                return False, "Неверный логин или пароль"
+            if role != user.role.name:
                 return False, "Неверный логин или пароль"
         except Exception as e:
             return False, "Ошибка проверки пароля"
@@ -162,7 +164,7 @@ class UserService:
             role_id=get_role_id_by_name(self.db, user_data.role),  # Получаем ID роли из базы данных
             login=login,
             password_hash=hashed_password,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
 
         # Сохраняем в базу данных

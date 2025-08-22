@@ -10,6 +10,6 @@ def get_role_id_by_name(db: Session, name: str) -> Optional[int]:
     return result[0] if result else None
 
 
-def get_role_name_by_id(db: Session, id: int) -> Optional[str]:
-    result = db.query(Role.name).filter(Role.id == id).first()
+def get_role_name_by_id(db: Session, _id: int) -> Optional[str]:
+    result = db.query(Role.name).filter(Role.id == _id).first()
     return result[0] if result else None

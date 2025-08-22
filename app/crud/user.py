@@ -1,9 +1,8 @@
 from typing import Optional
+
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from ..models.user import User
-from ..schemas.user import UserCreateRequest
 
 
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:

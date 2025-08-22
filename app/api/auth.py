@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from ..auth.schemas import Token, LoginRequest
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from sqlalchemy.orm import Session
+
+from ..auth.schemas import LoginRequest
+from ..auth.utils import decode_token
+from ..config import settings
 from ..database.engine import get_db
 from ..services.user_service import UserService
-from ..config import settings
 
 router = APIRouter(
     prefix="/auth",
@@ -21,24 +22,24 @@ async def login(
         db: Session = Depends(get_db)
 ):
     user_service = UserService(db)
-    success, result = user_service.authenticate_user(login_data.login, login_data.password)
+    success, token = user_service.authenticate_user(login_data.login, login_data.password, role=login_data.role)
 
     if not success:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=result,
+            detail=token,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Устанавливаем secure httpOnly cookie
+    # Ставим cookie **только с токеном**, без "Bearer "
     response.set_cookie(
         key="access_token",
-        value=f"Bearer {result}",
+        value=token,
         httponly=True,
-        secure=True,  # Только для HTTPS
-        samesite="lax",  # Защита от CSRF
-        expires=int((datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()),
-        path="/"  # Cookie доступен для всех путей
+        secure=True,  # True только на HTTPS
+        samesite="lax",
+        max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # в секундах
+        path="/"
     )
 
     return {"status": "success", "message": "Successfully authenticated"}
@@ -51,3 +52,16 @@ async def logout(response: Response):
         path="/"
     )
     return {"status": "success", "message": "Successfully logged out"}
+
+
+@router.get("/check")
+async def check(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return {"authenticated": False}
+
+    payload = decode_token(token)
+    if not payload:
+        return {"authenticated": False}
+
+    return {"authenticated": True}

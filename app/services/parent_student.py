@@ -1,10 +1,11 @@
-from typing import Tuple, Type
+from typing import Tuple, List
 
 from sqlalchemy.orm import Session
 
+from app.crud.parent_student import get_parents, get_students
 from app.crud.role import get_role_name_by_id
 from app.crud.user import get_user_by_id
-from app.models import ParentStudent
+from app.models import User
 from app.models.parent_student import ParentStudent
 from app.schemas.parent_student import ParentConnectRequest, DisconnectParentRequest
 
@@ -32,7 +33,13 @@ class ParentStudentService:
 
         return True, "Данные валидны"
 
-    from typing import Tuple, Optional
+    def get_parents(self) -> List[User]:
+        return get_parents(self.db)
+
+    def get_students(self) -> List[User]:
+        return get_students(self.db)
+
+    from typing import Tuple
 
     def is_connected(self, user_data) -> tuple[bool, str]:
         is_valid, message = self.is_parent_and_student(user_data)

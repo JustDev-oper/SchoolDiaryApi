@@ -9,10 +9,10 @@ from ..services.parent_student import ParentStudentService
 from ..services.user_service import UserService
 from ..database.engine import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/users/create", response_model=UserCreateResponse)
+@router.post("/create", response_model=UserCreateResponse)
 def create_user(
         user_data: UserCreateRequest,
         db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ def create_user(
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 
-@router.post("/users/connect_parent", response_model=ConnectParentResponse)
+@router.post("/connect_parent", response_model=ConnectParentResponse)
 async def connect_parent(
         user_data: ParentConnectRequest,
         db: Session = Depends(get_db),
@@ -54,7 +54,7 @@ async def connect_parent(
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 
-@router.delete("/users/detach_parent", response_model=DisconnectParentResponse)
+@router.delete("/detach_parent", response_model=DisconnectParentResponse)
 def detach_parent(
         user_data: DisconnectParentRequest,
         db: Session = Depends(get_db),
@@ -70,3 +70,39 @@ def detach_parent(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+
+@router.get("/all_parents")
+def all_parents(
+        db: Session = Depends(get_db),
+        current_user=Depends(check_role("admin", ))
+):
+    try:
+        service = ParentStudentService(db)
+        parents = service.get_parents()
+
+        return parents
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+
+@router.get("/all_students")
+def all_students(
+        db: Session = Depends(get_db),
+        current_user=Depends(check_role("admin", ))
+):
+    try:
+        service = ParentStudentService(db)
+        students = service.get_students()
+
+        return students
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+
+# TODO: сделать all_users
