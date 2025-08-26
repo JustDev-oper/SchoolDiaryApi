@@ -1,13 +1,13 @@
 import re
 import random
 import string
-from typing import Tuple
+from typing import Tuple, List
 from datetime import timedelta, timezone
 from sqlalchemy.orm import Session
 
 from ..models.user import User
 from ..schemas.user import UserCreateRequest
-from ..crud.user import get_user_by_phone, get_user_by_login
+from ..crud.user import get_user_by_phone, get_user_by_login, get_users
 from ..crud.role import get_role_id_by_name
 from ..auth.utils import create_token
 from ..config import settings
@@ -134,6 +134,9 @@ class UserService:
 
         return True, "Данные валидны"
 
+    def all_users(self) -> List[User]:
+        return get_users(self.db)
+
     def create_user(self, user_data: UserCreateRequest) -> Tuple[str, str, str]:
         """Создание нового пользователя"""
         # Валидация данных
@@ -164,7 +167,8 @@ class UserService:
             role_id=get_role_id_by_name(self.db, user_data.role),  # Получаем ID роли из базы данных
             login=login,
             password_hash=hashed_password,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
+            date_of_birth = user_data.date_of_birth
         )
 
         # Сохраняем в базу данных

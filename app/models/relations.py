@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
 from app.database.base import Base
 
 
-
 class TeacherSubjectClass(Base):
     __tablename__ = "teacher_subject_class"
     id = Column(Integer, primary_key=True, index=True)

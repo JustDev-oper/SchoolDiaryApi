@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -8,6 +10,7 @@ class UserCreateRequest(BaseModel):
     last_name: str = Field(..., description="Фамилия пользователя")
     middle_name: Optional[str] = Field(None, description="Отчество пользователя")
     role: str = Field(..., description="Роль пользователя (head_teacher/teacher/student/parent)")
+    date_of_birth: datetime = Field(..., description="Дата рождение")
 
     class Config:
         json_schema_extra = {
@@ -16,7 +19,8 @@ class UserCreateRequest(BaseModel):
                 "first_name": "Иван",
                 "last_name": "Иванов",
                 "middle_name": "Иванович",
-                "role": "teacher"
+                "role": "teacher",
+                "date_of_birth": "1990-03-11",
             }
         }
 
@@ -44,6 +48,8 @@ class UserResponse(BaseModel):
     middle_name: Optional[str]
     role: str
     login: str
+    date_of_birth: datetime
+    class_id: Optional[int] = Field(None, description="ID класса, может быть null")
 
     class Config:
         from_attributes = True

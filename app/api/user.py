@@ -1,18 +1,19 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..auth.dependencies import check_role
-from ..schemas.parent_student import ConnectParentResponse, ParentConnectRequest, DisconnectParentResponse, \
-    DisconnectParentRequest
-from ..schemas.user import UserCreateRequest, UserCreateResponse
+from ..database.engine import get_db
+from ..models import User
+from ..schemas.user import UserCreateRequest, UserCreateResponse, UserResponse
 from ..services.parent_student import ParentStudentService
 from ..services.user_service import UserService
-from ..database.engine import get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/create", response_model=UserCreateResponse)
+@router.post("/", response_model=UserCreateResponse)
 def create_user(
         user_data: UserCreateRequest,
         db: Session = Depends(get_db),
@@ -36,43 +37,7 @@ def create_user(
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 
-@router.post("/connect_parent", response_model=ConnectParentResponse)
-async def connect_parent(
-        user_data: ParentConnectRequest,
-        db: Session = Depends(get_db),
-        current_user=Depends(check_role("admin", ))
-):
-    try:
-        service = ParentStudentService(db)
-        message, parent, student = service.create_connection_with_parent(user_data)
-
-        return ConnectParentResponse(message=message, parent=parent, student=student)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
-
-
-@router.delete("/detach_parent", response_model=DisconnectParentResponse)
-def detach_parent(
-        user_data: DisconnectParentRequest,
-        db: Session = Depends(get_db),
-        current_user=Depends(check_role("admin", ))
-):
-    try:
-        service = ParentStudentService(db)
-        message = service.delete_connection_with_parent(user_data)
-
-        return DisconnectParentResponse(message=message)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
-
-
-@router.get("/all_parents")
+@router.get("/parents")
 def all_parents(
         db: Session = Depends(get_db),
         current_user=Depends(check_role("admin", ))
@@ -89,7 +54,7 @@ def all_parents(
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 
-@router.get("/all_students")
+@router.get("/students")
 def all_students(
         db: Session = Depends(get_db),
         current_user=Depends(check_role("admin", ))
@@ -105,4 +70,73 @@ def all_students(
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
 
 
-# TODO: сделать all_users
+@router.get("/", response_model=List[UserResponse])
+def all_users(
+        db: Session = Depends(get_db),
+        current_user=Depends(check_role("admin", ))
+):
+    try:
+        users = db.query(User).all()
+        return [
+            UserResponse(
+                id=u.id,
+                phone=u.phone,
+                first_name=u.first_name,
+                last_name=u.last_name,
+                middle_name=u.middle_name,
+                role=u.role.name,  # тут берем только имя роли
+                login=u.login,
+                date_of_birth=u.date_of_birth,
+                class_id=u.class_id,
+            )
+            for u in users
+        ]
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+
+@router.get("/{_id}", response_model=UserResponse)
+def get_user(
+        _id: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(check_role("admin", ))
+):
+    try:
+        user = db.query(User).filter(User.id == _id).first()
+        return UserResponse(
+            id=user.id,
+            phone=user.phone,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            middle_name=user.middle_name,
+            role=user.role.name,
+            login=user.login,
+            date_of_birth=user.date_of_birth,
+            class_id=user.class_id,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
+
+
+@router.put("/{id}", response_model=UserResponse)
+def update_user(
+        _id: int,
+        user_data: UserCreateRequest,
+        db: Session = Depends(get_db),
+        current_user=Depends(check_role("admin", ))
+):
+    try:
+        service = UserService(db)
+
+        # TODO: дописать обновление данных пользователя
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка сервера: {str(e)}")
